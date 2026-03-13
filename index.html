@@ -481,23 +481,68 @@ function clearForm(){['f-title','f-name','f-class','f-tech','f-img','f-desc'].fo
 
 // RENDER CARDS
 function renderCards(list){
-  const grid=document.getElementById('projectsGrid');grid.innerHTML='';
+  const grid=document.getElementById('projectsGrid');
+  grid.innerHTML='';
   if(!list||!list.length){showEmpty(grid);return;}
   window._pmap={};
-  list.forEach((p,i)=>{
-    if(p.id)window._pmap[p.id]=p;
-    const card=document.createElement('div');
+  list.forEach(function(p,i){
+    if(p.id) window._pmap[p.id]=p;
+    var isLiked=localStorage.getItem('liked_'+p.id)==='1';
+    var card=document.createElement('div');
     card.className='project-card';
     card.setAttribute('data-tech',(p.tech||'').toLowerCase());
     card.setAttribute('data-title',(p.title||'').toLowerCase());
     card.setAttribute('data-cat',p.category||'general');
-    card.setAttribute('data-pid',p.id||'');
     card.style.animationDelay=(i%9)*70+'ms';
-    const tags=(p.tech||'').split(',').slice(0,4).map(t=>`<span class="ctag">${t.trim()}</span>`).join('');
-    const ini=(p.division||'JC').replace(/[^a-zA-Z]/g,' ').split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,2)||'JC';
-    const isLiked=localStorage.getItem('liked_'+p.id)==='1';
-    const thumb=p.image?`<img src="${p.image}" alt="" onerror="this.parentElement.innerHTML='<div class=\\'card-placeholder\\'><div class=\\'card-placeholder-icon\\'>💻</div><div class=\\'card-gradient-bar\\'></div></div>'">`:`<div class="card-placeholder"><div class="card-placeholder-icon">💻</div><div class="card-gradient-bar"></div></div>`;
-    card.innerHTML=`<div class="card-thumb">${thumb}<div class="card-overlay"></div></div><div class="card-body"><h3>${p.title||'Untitled'}</h3><div class="card-tags">${tags}</div><p class="card-desc">${p.desc||''}</p></div><div class="card-footer"><div class="card-author"><div class="avatar">${ini}</div><span>${p.division||'JCOET'}</span></div><div class="card-actions"><span class="views-badge">👁️ ${p.views||0}</span><button class="like-btn ${isLiked?'liked':''}" onclick="doLike(event,'${p.id}',this)"><span>${isLiked?'❤️':'🤍'}</span><span class="lc">${p.likes||0}</span></button><button class="view-btn" onclick="openModalById('${p.id}')">View</button></div></div>`;
+
+    // Thumb
+    var thumb=document.createElement('div');
+    thumb.className='card-thumb';
+    if(p.image){
+      var img=document.createElement('img');
+      img.src=p.image;img.alt='';
+      img.onerror=function(){this.parentElement.innerHTML='<div class="card-placeholder"><div class="card-placeholder-icon">💻</div><div class="card-gradient-bar"></div></div>';};
+      thumb.appendChild(img);
+    } else {
+      thumb.innerHTML='<div class="card-placeholder"><div class="card-placeholder-icon">💻</div><div class="card-gradient-bar"></div></div>';
+    }
+    var ov=document.createElement('div');ov.className='card-overlay';thumb.appendChild(ov);
+    card.appendChild(thumb);
+
+    // Body
+    var body=document.createElement('div');body.className='card-body';
+    var h3=document.createElement('h3');h3.textContent=p.title||'Untitled';body.appendChild(h3);
+    var tagsDiv=document.createElement('div');tagsDiv.className='card-tags';
+    (p.tech||'').split(',').slice(0,4).forEach(function(t){
+      var sp=document.createElement('span');sp.className='ctag';sp.textContent=t.trim();tagsDiv.appendChild(sp);
+    });
+    body.appendChild(tagsDiv);
+    var desc=document.createElement('p');desc.className='card-desc';desc.textContent=p.desc||'';body.appendChild(desc);
+    card.appendChild(body);
+
+    // Footer
+    var footer=document.createElement('div');footer.className='card-footer';
+    var ini=(p.division||'JC').replace(/[^a-zA-Z]/g,' ').split(' ').filter(Boolean).map(function(w){return w[0];}).join('').toUpperCase().slice(0,2)||'JC';
+    var author=document.createElement('div');author.className='card-author';
+    author.innerHTML='<div class="avatar">'+ini+'</div><span>'+(p.division||'JCOET')+'</span>';
+    footer.appendChild(author);
+
+    var actions=document.createElement('div');actions.className='card-actions';
+    var vbadge=document.createElement('span');vbadge.className='views-badge';vbadge.textContent='👁️ '+(p.views||0);actions.appendChild(vbadge);
+
+    var likeBtn=document.createElement('button');
+    likeBtn.className='like-btn'+(isLiked?' liked':'');
+    likeBtn.innerHTML='<span>'+(isLiked?'❤️':'🤍')+'</span><span class="lc">'+(p.likes||0)+'</span>';
+    likeBtn.onclick=function(e){doLike(e,p.id,likeBtn);};
+    actions.appendChild(likeBtn);
+
+    var viewBtn=document.createElement('button');
+    viewBtn.className='view-btn';viewBtn.textContent='View';
+    viewBtn.onclick=function(e){e.stopPropagation();openModal({stopPropagation:function(){}},p);};
+    actions.appendChild(viewBtn);
+
+    footer.appendChild(actions);
+    card.appendChild(footer);
     grid.appendChild(card);
   });
 }
